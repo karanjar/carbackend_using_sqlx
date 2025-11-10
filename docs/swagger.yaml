@@ -1,0 +1,85 @@
+basePath: /
+definitions:
+  models.Car:
+    properties:
+      id:
+        type: integer
+      model:
+        type: string
+      name:
+        type: string
+      price:
+        type: number
+      year:
+        type: integer
+    type: object
+  models.Error:
+    properties:
+      details:
+        type: string
+      message:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: API documentation for the Cargo Car Backend built with Fiber.
+  title: Car Backend API
+  version: "1.0"
+paths:
+  /cars:
+    post:
+      consumes:
+      - application/json
+      description: Add a new car to the database
+      parameters:
+      - description: Car data
+        in: body
+        name: car
+        required: true
+        schema:
+          $ref: '#/definitions/models.Car'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Car'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Error'
+      summary: Create a new car
+      tags:
+      - cars
+  /cars/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get a car from the inventory
+      parameters:
+      - description: Car id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Car'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.Error'
+      summary: Get  a new car
+      tags:
+      - cars
+swagger: "2.0"
