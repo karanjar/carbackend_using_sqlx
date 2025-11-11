@@ -3,22 +3,28 @@ package config
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/redis/go-redis/v9"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 var Db *sqlx.DB
 var Cache *redis.Client
+var Client *mongo.Client
 
 func ConnectDb() {
 	const (
 		user     = "dustin"
 		password = "12345"
 		dbname   = "cardb"
+		host     = "pgdb"
+		port     = "5432"
 	)
-	dsn := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable", user, password, dbname)
+	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s  sslmode=disable", host, port, user, password, dbname)
 	//connecct to database using gorm
 	db, err := sqlx.Connect("postgres", dsn)
 
@@ -52,4 +58,19 @@ func ConnectCache() {
 	fmt.Println("Successfully connected to caching database")
 
 	Cache = rdb
+}
+func Connectmongo() {
+	opts := options.Client().ApplyURI("mongodb://localhost:27017")
+	_, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	client, err := mongo.Connect(opts)
+	if err != nil {
+		fmt.Println("Error connecting to mongo")
+		panic(err)
+	}
+
+	Client = client
+
+	fmt.Println("Successfully connected to mongo")
 }

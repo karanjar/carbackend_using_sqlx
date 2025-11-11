@@ -20,7 +20,9 @@ import (
 // @BasePath /
 
 func main() {
+
 	config.ConnectDb()
+	config.Connectmongo()
 	config.ConnectCache()
 
 	app := fiber.New()

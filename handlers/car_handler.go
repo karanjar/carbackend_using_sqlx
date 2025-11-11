@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,9 +13,28 @@ import (
 	"github.com/karanjar/cargobackend_fibre_framework.git/config"
 	"github.com/karanjar/cargobackend_fibre_framework.git/models"
 	"github.com/redis/go-redis/v9"
+	"go.mongodb.org/mongo-driver/bson"
+	options2 "go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 var Mu sync.Mutex
+
+func getId(ctx context.Context) (int, error) {
+	col := config.Client.Database("car_inventory").Collection("cars")
+
+	var counter struct {
+		ID  string `bson:"_id"`
+		Seq int    `bson:"seq"`
+	}
+	filter := bson.M{"_id": "car_id"}
+	update := bson.M{"$inc": bson.M{"seq": 1}}
+	options := options2.FindOneAndUpdate().SetUpsert(true).SetReturnDocument(options2.After)
+
+	if err := col.FindOneAndUpdate(ctx, filter, update, options).Decode(&counter); err != nil {
+		return 0, fmt.Errorf("errer finding car id from context %v", err)
+	}
+	return counter.Seq, nil
+}
 
 // Createcar  godoc
 // @Summary Create a new car
@@ -39,11 +59,30 @@ func Createcar(c *fiber.Ctx) error {
 		})
 	}
 
-	if err := car.Insert(); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "incorrect input body",
+	//if err := car.Insert(); err != nil {
+	//	return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+	//		"error": "incorrect input body",
+	//	})
+	//}
+
+	//car insert
+
+	id, err := getId(c.Context())
+	if err != nil {
+		fmt.Printf("error getting id from context: %v\n", err)
+	}
+	car.Id = id
+
+	coll := config.Client.Database("car_inventory").Collection("cars")
+	reault, err := coll.InsertOne(c.Context(), car)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(&models.Error{
+			Message: "unable to add a new car",
+			Details: err.Error(),
 		})
 	}
+
+	fmt.Println(reault.InsertedID)
 
 	fmt.Println("Car created with the id:", car.Id)
 	return c.Status(fiber.StatusCreated).JSON(car)
@@ -90,7 +129,7 @@ func Getcar(c *fiber.Ctx) error {
 		fmt.Printf("cache miss for id:%v\n", id)
 	}
 
-	car.Id = id
+	//car.Id = id
 
 	if err := car.Get(); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -121,7 +160,7 @@ func Deletecar(c *fiber.Ctx) error {
 		})
 	}
 
-	car.Id = id
+	//car.Id = id
 	if err := car.Delete(); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "car with the given id does not found",
@@ -149,7 +188,7 @@ func Updatecar(c *fiber.Ctx) error {
 		})
 	}
 
-	car.Id = id
+	//car.Id = id
 
 	if err := car.Update(); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
